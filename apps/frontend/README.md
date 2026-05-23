@@ -1,0 +1,109 @@
+# Pinnochios Pizza (Expo)
+
+Customer mobile app in the monorepo (`apps/frontend`).
+
+## Prerequisites
+
+Install dependencies from the **repository root** (npm workspaces hoist shared packages):
+
+```bash
+npm install
+```
+
+## Run on Android
+
+```bash
+cd apps/frontend
+npm run android
+```
+
+This builds the native Android project (`expo run:android` with `expo-dev-client`). You need Android Studio / SDK and either an emulator or a device with USB debugging.
+
+**Android Studio:** open the Gradle project folder `apps/frontend/android` (not the monorepo root). Autolinking uses the Expo JS root from `settings.gradle`; if Gradle still picks up stale paths after you move the repo, delete `android/build/generated/autolinking/` and sync/build again.
+
+Start Metro only:
+
+```bash
+npm run dev
+```
+
+## Windows / Android native build (MAX_PATH)
+
+Typical Gradle log:
+
+```text
+> Task :app:buildCMakeDebug[arm64-v8a] FAILED
+ninja: error: Stat(... RNCSafeAreaViewShadowNode.cpp.o): Filename longer than 260 characters
+```
+
+CMake may also warn about **`CMAKE_OBJECT_PATH_MAX` (~250)** — same class of problem while building under **long paths** such as OneDrive **`…\Pizza-Ai\…`** plus New Architecture codegen.
+
+**Check your machine** (from `apps/frontend`):
+
+```bash
+npm run android:path-check
+```
+
+**Verify OS long-path support**:
+
+```powershell
+reg query HKLM\SYSTEM\CurrentControlSet\Control\FileSystem /v LongPathsEnabled
+```
+
+`0x1` means enabled. If missing or `0x0`, set it (Administrator PowerShell) as below, **reboot or sign out**, delete `android\app\.cxx` and `android\build`, then rebuild.
+
+Prefer **not using OneDrive as the repo root for native Android** (sync/virtualization compounds pain); a clone under `C:\dev\…` often fixes this even without registry edits.
+
+Shrinking paths or enabling long-path support fixes this reliably (**`newArchEnabled=false` is ignored on React Native 0.82+**, so you cannot disable New Arch to escape long paths.)
+
+### 1. Enable Windows long paths (recommended)
+
+Run **PowerShell as Administrator**:
+
+```powershell
+New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' `
+  -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force
+```
+
+Sign out or reboot, then **delete CMake outputs** so the next build is clean:
+
+```powershell
+cd apps\frontend
+Remove-Item -Recurse -Force android\app\.cxx,android\build,android\.gradle -ErrorAction SilentlyContinue
+```
+
+Run `npm run android` again.
+
+### 2. Use a shorter project path
+
+Move or clone the repo to something shallow, e.g. `C:\dev\Pizza-Ai`, **not** a long OneDrive tree. CMake paths embed the full path to `node_modules`, so shorter roots help a lot.
+
+### 3. Build from a virtual drive (`subst`)
+
+Map the repo root to a single-letter path before building:
+
+```bat
+subst P: "C:\Users\<you>\<full>\<path>\Pizza-Ai"
+cd /d P:\apps\frontend
+npm run android
+```
+
+Use `subst P: /d` later to remove the mapping.
+
+---
+
+## Stripe (native)
+
+`app.json` configures the Stripe config plugin with a placeholder `merchantIdentifier` for Apple Pay. Replace `merchant.pinnochiospizza` with your **real** Apple Merchant ID before shipping iOS; Google Pay toggle is configured for Android builds.
+
+---
+
+## Functional app shell (tutorial-inspired)
+
+Inspired by workflows like [*Let’s Vibe Code a Pizza Delivery App with AI — Ep \#5*](https://www.youtube.com/watch?v=0xktM8p-gTA) (Sonny Sangha / Expo / Clerk):
+
+- **Clerk**: email/password sign-in and sign-up (with optional email verification code screen).
+- **Convex**: seeded **menu** (`pizzas` table via `seedDemoMenu` when empty).
+- **Cart**: client-side cart with tab badge; **checkout** uses Stripe (Payment Sheet on native, Stripe Checkout redirect on web) with shared server-side cart validation. A legacy **manual** “pay at delivery” mutation exists for dev; set Convex **`ALLOW_UNPAID_ORDERS=false`** to disable it in production (`PINNOCHIOS_OPS.md`).
+
+**Note:** Ep \#5 also discusses a CMS; this repo loads the menu from **Convex** so it stays in sync with your deployment without wiring Sanity separately.

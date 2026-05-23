@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "Pinnochios Pizza",
+    "slug": "pinnochios-pizza",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "pinnochiospizza",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pinnochiospizza.app"
+    },
+    "android": {
+      "predictiveBackGestureEnabled": false,
+      "package": "com.pinnochiospizza.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.pinnochiospizza",
+          "enableGooglePay": true
+        }
+      ]
+    ]
+  }
+}

@@ -8,7 +8,18 @@
  * @module
  */
 
-import type * as myFunctions from "../myFunctions.js";
+import type * as admin_menu from "../admin/menu.js";
+import type * as helpers_authHelpers from "../helpers/authHelpers.js";
+import type * as helpers_orderCheckoutPayload from "../helpers/orderCheckoutPayload.js";
+import type * as helpers_pricingOrders from "../helpers/pricingOrders.js";
+import type * as http from "../http.js";
+import type * as menu from "../menu.js";
+import type * as orders from "../orders.js";
+import type * as storeSettings from "../storeSettings.js";
+import type * as stripeCheckout from "../stripeCheckout.js";
+import type * as stripeInternal from "../stripeInternal.js";
+import type * as stripeWebhook from "../stripeWebhook.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +28,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  myFunctions: typeof myFunctions;
+  "admin/menu": typeof admin_menu;
+  "helpers/authHelpers": typeof helpers_authHelpers;
+  "helpers/orderCheckoutPayload": typeof helpers_orderCheckoutPayload;
+  "helpers/pricingOrders": typeof helpers_pricingOrders;
+  http: typeof http;
+  menu: typeof menu;
+  orders: typeof orders;
+  storeSettings: typeof storeSettings;
+  stripeCheckout: typeof stripeCheckout;
+  stripeInternal: typeof stripeInternal;
+  stripeWebhook: typeof stripeWebhook;
+  users: typeof users;
 }>;
 
 /**

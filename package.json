@@ -2,7 +2,7 @@
   "name": "pizza-delivery-ai",
   "private": true,
   "packageManager": "npm@11.7.0",
-  "workspaces": ["apps/*"],
+  "workspaces": ["apps/*", "backend"],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
