@@ -104,8 +104,14 @@ export default defineSchema({
     totalCents: v.number(),
     stripePaymentIntentId: v.optional(v.string()),
     stripeCheckoutSessionId: v.optional(v.string()),
+    stripeRefundId: v.optional(v.string()),
     paymentStatus: v.optional(
-      v.union(v.literal("paid"), v.literal("manual")),
+      v.union(
+        v.literal("paid"),
+        v.literal("manual"),
+        v.literal("refunded"),
+        v.literal("refund_failed"),
+      ),
     ),
     createdAt: v.number(),
     updatedAt: v.number(),

@@ -10,6 +10,8 @@ import { buildValidatedOrderSnapshot } from "./helpers/orderCheckoutPayload";
 import { deliveryAddressSnapshotValidator } from "./schema";
 import { placeCartLineValidator } from "./stripeInternal";
 
+import { internal } from "./_generated/api";
+
 export const placeOrder = mutation({
   args: {
     notes: v.optional(v.string()),
@@ -99,6 +101,50 @@ export const getMineByStripeCheckoutSessionId = query({
   },
 });
 
+/**
+ * Cancel own order before the kitchen starts (`received`). Paid card orders enqueue a Stripe refund.
+ */
+export const cancelMine = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const subject = await getCurrentUserSubject(ctx);
+    const existing = await ctx.db.get(args.orderId);
+    if (!existing || existing.userId !== subject) {
+      throw new Error("Order not found");
+    }
+
+    if (existing.status === "cancelled") {
+      return { cancelled: false as const };
+    }
+
+    if (existing.status !== "received") {
+      throw new Error(
+        "This order can’t be canceled once the kitchen has started. Contact the store if you need help.",
+      );
+    }
+
+    const refundEligible =
+      existing.paymentStatus === "paid" &&
+      Boolean(existing.stripePaymentIntentId) &&
+      existing.stripeRefundId === undefined;
+
+    await ctx.db.patch(existing._id, {
+      status: "cancelled",
+      updatedAt: Date.now(),
+    });
+
+    if (refundEligible) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.stripeRefundActions.refundPaidCancelledOrder,
+        { orderId: existing._id },
+      );
+    }
+
+    return { cancelled: true as const };
+  },
+});
+
 export const adminList = query({
   args: {
     status: v.optional(
@@ -147,10 +193,26 @@ export const adminUpdateStatus = mutation({
     const existing = await ctx.db.get(args.orderId);
     if (!existing) throw new Error("Order not found");
 
+    const refundEligible =
+      args.status === "cancelled" &&
+      existing.status !== "cancelled" &&
+      existing.paymentStatus === "paid" &&
+      Boolean(existing.stripePaymentIntentId) &&
+      existing.stripeRefundId === undefined;
+
     await ctx.db.patch(args.orderId, {
       status: args.status,
       updatedAt: Date.now(),
     });
+
+    if (refundEligible) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.stripeRefundActions.refundPaidCancelledOrder,
+        { orderId: args.orderId },
+      );
+    }
+
     return args.orderId;
   },
 });

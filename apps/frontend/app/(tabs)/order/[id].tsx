@@ -1,7 +1,7 @@
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../../../backend/convex/_generated/dataModel";
 import { useLocalSearchParams } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import LoadingScreen from "@/components/loading-screen";
 import { formatUsd } from "@/lib/format";
@@ -36,6 +36,7 @@ export default function OrderDetailScreen() {
     api.orders.getMineById,
     orderId ? { orderId } : "skip",
   );
+  const cancelMine = useMutation(api.orders.cancelMine);
 
   if (orderId === null || order === undefined) {
     return <LoadingScreen message="Loading order…" />;
@@ -49,41 +50,82 @@ export default function OrderDetailScreen() {
     );
   }
 
+  /** Narrowed doc for closures (nested `function` loses TS narrowing on `useQuery`). */
+  const O = order;
+
+  function confirmCancel(): void {
+    Alert.alert(
+      "Cancel this order?",
+      O.paymentStatus === "paid"
+        ? "Your card payment will be refunded automatically (usually a few days)."
+        : "You can cancel while the restaurant hasn’t started your order.",
+      [
+        { text: "Keep order", style: "cancel" },
+        {
+          text: "Cancel order",
+          style: "destructive",
+          onPress: () => {
+            void cancelMine({ orderId: O._id }).catch((err: unknown) => {
+              Alert.alert(
+                "Could not cancel",
+                err instanceof Error ? err.message : "Try again shortly.",
+              );
+            });
+          },
+        },
+      ],
+    );
+  }
+
+  const canCustomerCancel =
+    O.status === "received";
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.pad}>
-      <Text style={styles.badge}>{statusChip(order.status)}</Text>
-      <Text style={styles.total}>{formatUsd(order.totalCents)}</Text>
+      <Text style={styles.badge}>{statusChip(O.status)}</Text>
+      <Text style={styles.total}>{formatUsd(O.totalCents)}</Text>
+      {O.paymentStatus === "paid" ||
+      O.paymentStatus === "refunded" ||
+      O.paymentStatus === "refund_failed" ? (
+        <Text style={styles.payMeta}>
+          {O.paymentStatus === "paid"
+            ? "Paid with card"
+            : O.paymentStatus === "refunded"
+              ? "Payment refunded"
+              : "Refund issue — contact the store"}
+        </Text>
+      ) : null}
       <Text style={styles.meta}>
         Placed{" "}
-        {new Date(order.createdAt).toLocaleString(undefined, {
+        {new Date(O.createdAt).toLocaleString(undefined, {
           dateStyle: "medium",
           timeStyle: "short",
         })}
       </Text>
-      {order.notes ? <Text style={styles.notes}>{order.notes}</Text> : null}
+      {O.notes ? <Text style={styles.notes}>{O.notes}</Text> : null}
 
-      {order.deliveryAddress ? (
+      {O.deliveryAddress ? (
         <>
           <Text style={styles.section}>Delivery address</Text>
           <View style={styles.addrCard}>
-            <Text style={styles.addrLine}>{order.deliveryAddress.line1}</Text>
-            {order.deliveryAddress.line2 ? (
-              <Text style={styles.addrLine}>{order.deliveryAddress.line2}</Text>
+            <Text style={styles.addrLine}>{O.deliveryAddress.line1}</Text>
+            {O.deliveryAddress.line2 ? (
+              <Text style={styles.addrLine}>{O.deliveryAddress.line2}</Text>
             ) : null}
             <Text style={styles.addrLine}>
-              {[order.deliveryAddress.city, order.deliveryAddress.region]
+              {[O.deliveryAddress.city, O.deliveryAddress.region]
                 .filter(Boolean)
                 .join(", ")}
               {"  "}
-              {order.deliveryAddress.postalCode}
+              {O.deliveryAddress.postalCode}
             </Text>
-            <Text style={styles.addrPhone}>{order.deliveryAddress.phone}</Text>
+            <Text style={styles.addrPhone}>{O.deliveryAddress.phone}</Text>
           </View>
         </>
       ) : null}
 
       <Text style={styles.section}>Items</Text>
-      {order.lineItems.map((line, i) => (
+      {O.lineItems.map((line, i) => (
         <View key={i} style={styles.row}>
           <View style={{ flex: 1 }}>
             <Text style={styles.rowTitle}>{line.pizzaNameSnapshot}</Text>
@@ -99,6 +141,22 @@ export default function OrderDetailScreen() {
           <Text style={styles.qty}>×{line.quantity}</Text>
         </View>
       ))}
+
+      {canCustomerCancel ? (
+        <>
+          <Text style={styles.cancelHint}>
+            Need to cancel? You can do that here while the status is Received.
+          </Text>
+          <Pressable
+            style={styles.cancelBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel order"
+            onPress={confirmCancel}
+          >
+            <Text style={styles.cancelBtnLabel}>Cancel order</Text>
+          </Pressable>
+        </>
+      ) : null}
     </ScrollView>
   );
 }
@@ -119,6 +177,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   meta: { color: palette.textSecondary, textAlign: "center" },
+  payMeta: {
+    color: palette.textSecondary,
+    textAlign: "center",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  cancelHint: {
+    marginTop: 12,
+    color: palette.textSecondary,
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  cancelBtn: {
+    marginTop: 8,
+    alignSelf: "stretch",
+    paddingVertical: 14,
+    borderRadius: radii.md,
+    borderWidth: 2,
+    borderColor: "#b91c1c",
+    backgroundColor: palette.card,
+    alignItems: "center",
+  },
+  cancelBtnLabel: {
+    fontWeight: "800",
+    color: "#b91c1c",
+    fontSize: 16,
+  },
   notes: {
     backgroundColor: palette.card,
     padding: 12,

@@ -266,3 +266,41 @@ export const finalizeStripeCheckoutFromWebhook = internalMutation({
     return { orderId };
   },
 });
+
+export const orderRowForStripeRefund = internalQuery({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.orderId);
+    if (!row) return null;
+    return {
+      status: row.status,
+      paymentStatus: row.paymentStatus,
+      stripePaymentIntentId: row.stripePaymentIntentId,
+      stripeRefundId: row.stripeRefundId,
+    };
+  },
+});
+
+export const recordStripeRefundOnOrder = internalMutation({
+  args: {
+    orderId: v.id("orders"),
+    stripeRefundId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orderId, {
+      stripeRefundId: args.stripeRefundId,
+      paymentStatus: "refunded",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const recordStripeRefundFailureOnOrder = internalMutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.orderId, {
+      paymentStatus: "refund_failed",
+      updatedAt: Date.now(),
+    });
+  },
+});

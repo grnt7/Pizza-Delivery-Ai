@@ -18,6 +18,7 @@ import type * as orders from "../orders.js";
 import type * as storeSettings from "../storeSettings.js";
 import type * as stripeCheckout from "../stripeCheckout.js";
 import type * as stripeInternal from "../stripeInternal.js";
+import type * as stripeRefundActions from "../stripeRefundActions.js";
 import type * as stripeWebhook from "../stripeWebhook.js";
 import type * as users from "../users.js";
 
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   storeSettings: typeof storeSettings;
   stripeCheckout: typeof stripeCheckout;
   stripeInternal: typeof stripeInternal;
+  stripeRefundActions: typeof stripeRefundActions;
   stripeWebhook: typeof stripeWebhook;
   users: typeof users;
 }>;

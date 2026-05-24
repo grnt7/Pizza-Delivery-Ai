@@ -76,6 +76,9 @@ Manual fallback if webhooks are off: insert a **`users`** document in the Convex
 
 7. **Manual / unpaid orders**: public **`orders.placeOrder`** may be disabled by setting Convex env **`ALLOW_UNPAID_ORDERS`** to **`false`** (reject pay-at-delivery path). Omit or set to **`true`** during development if you still need the unpaid flow.
 
+8. **Cancellations**: Customers call **`orders.cancelMine`** only while **`status`** is **`received`**; paid orders (**`paymentStatus: "paid"`** with **`stripePaymentIntentId`**) enqueue **`internal.stripeRefundActions.refundPaidCancelledOrder`** (requires **`STRIPE_SECRET_KEY`**). Admins use **Orders → Cancel order** for **`received` / `prep` / `out_for_delivery`**; paid Stripe totals get the same refund job.
+
+
 Routing: **`convex/http.ts`** forwards **`POST /webhooks/stripe`** to **`stripeWebhook.processStripeCheckoutWebhookRequest`** (Node) for signature verification, then runs **`stripeInternal.finalizeStripeCheckoutFromWebhook`** (idempotent order insert + pending cleanup).
 
 ## Bootstrap data
