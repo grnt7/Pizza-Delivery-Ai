@@ -83,16 +83,25 @@ Point **`apps/frontend/.env`** → **`EXPO_PUBLIC_ADMIN_URL`** at this URL (`htt
 
 ---
 
-## Turbo: dev all workspaces at once (optional)
+## Run everything with Turborepo (optional)
 
-From **`Pizza-Ai/`**:
+From the repo root (**`Pizza-Ai/`**), one command starts **backend + customer app + admin** in parallel (same processes as opening three terminals):
 
 ```bash
 npm run dev
-# turbo run dev — starts Convex, Expo Metro, Next in parallel (no cache, persistent tasks)
 ```
 
-If logs are noisy, use separate terminals instead.
+This runs **`turbo run dev`** across workspaces. Each **`dev`** script is **persistent**, so Convex, Expo, and Next all stay running.
+
+| Workspace | `npm run dev` runs |
+|-----------|---------------------|
+| **`backend`** | `convex dev` |
+| **`apps/frontend`** | `expo start` (Metro — press **`w`** for web, etc.) |
+| **`apps/admin`** | `next dev --port 3001` → [http://localhost:3001](http://localhost:3001) |
+
+You still need the **env files** and Convex deployment pairing described above; Turborepo only orchestrates the processes.
+
+**Tips:** Logs from three servers are mixed in one terminal — use **Run locally** above (three separate terminals) if that’s harder to follow. Convex must already be **`npx convex` logged in / linked** the same way as when you run **`cd backend && npm run dev`** alone.
 
 ---
 
