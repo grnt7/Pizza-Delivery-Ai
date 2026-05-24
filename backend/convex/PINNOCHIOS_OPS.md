@@ -2,7 +2,11 @@
 
 ## Shared deployment
 
-Both **Expo** (`apps/frontend`) and **Next admin** (`apps/admin`) must use the same **`NEXT_PUBLIC_CONVEX_URL`**.
+Both **Expo** (`apps/frontend`) and **Next admin** (`apps/admin`) must point at the **same Convex deployment URL** (**`EXPO_PUBLIC_CONVEX_URL`** in Expo / **`NEXT_PUBLIC_CONVEX_URL`** in Next).
+
+**Kitchen link:** in **`apps/frontend/.env`** set **`EXPO_PUBLIC_ADMIN_URL`** to your Next admin base URL (local `http://localhost:3001` or deployed **`https://…`**). Signed-in admins see **Kitchen dashboard** on the Expo Profile tab; it opens that URL in the browser (same Clerk **`publicMetadata.role: "admin"`** gate as [`apps/admin/app/dashboard/layout.tsx`](../../apps/admin/app/dashboard/layout.tsx)).
+
+**Frontend wiring:** **`apps/frontend/app.config.js`** merges **`app.json`** and calls **`@expo/env`** from that package folder so Turborepo / odd cwd still loads **`apps/frontend/.env`**; it also mirrors **`EXPO_PUBLIC_ADMIN_URL`** into **`expo.extra`**. Restart Metro (**`expo start --clear`**); avoid **`EXPO_NO_DOTENV=1`** / **`EXPO_NO_CLIENT_ENV_VARS=1`** in dev (they block `.env` or client **`EXPO_PUBLIC_*`** serialization).
 
 ## Clerk ↔ Convex auth (fix “No auth provider found…”)
 
@@ -38,6 +42,17 @@ Convex auth expects **`CLERK_JWT_ISSUER_DOMAIN`** (same URL as Clerk’s Fronten
 3. In Clerk → **Users** → **Public metadata**, set **`{ "role": "admin" }`** for kitchen staff accounts. Convex syncs **`users`** table (`role`) on each webhook.
 
 HTTP route is implemented in **`convex/http.ts`**.
+
+### Admin Convex checks vs Next.js UI
+
+Next admin (`apps/admin`) trusts Clerk **`publicMetadata.role`**. Convex **`requireAdmin`** normally checks **`users.role`** after webhook sync — if webhook isn’t wired yet or the row is stale, add **role to the Convex JWT**:
+
+1. Clerk → **JWT templates** → template **`convex`** (Convex integration preset). In **Claims** add **`"role": "{{user.public_metadata.role}}"`** (or **`"public_metadata": {{user.public_metadata}}`** as an object claim per Clerk shortcode rules).
+
+2. **Sign out and sign back in** so `ConvexProviderWithClerk` fetches a new token.
+
+3. **`users.syncRoleFromJwt`** (wired from **`apps/admin`** dashboard shell) optionally patches **`users.role`** once per session when the JWT already indicates **`admin`** (no manual dashboard insert needed).
+
 
 Manual fallback if webhooks are off: insert a **`users`** document in the Convex dashboard with **`clerkId`** = JWT `subject` and **`role`**: **`"admin"`**.
 

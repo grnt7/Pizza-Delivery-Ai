@@ -1,5 +1,34 @@
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
+import type { UserIdentity } from "convex/server";
+
+/**
+ * True when the Clerk-issued Convex JWT carries an admin hint (JWT template claims),
+ * aligning with Clerk `publicMetadata.role === "admin"` used by Next admin UI.
+ *
+ * Prefer adding to the Clerk JWT template **`convex`** claim:
+ * `"role": "{{user.public_metadata.role}}"` (or include `{{user.public_metadata}}` as an object claim).
+ */
+export function identityIndicatesClerkPublicAdmin(
+  identity: UserIdentity | null | undefined,
+): boolean {
+  if (!identity) return false;
+  const topRole = identity.role;
+  if (topRole === "admin") return true;
+
+  const rec = identity as Record<string, unknown>;
+  const pmRaw = rec.public_metadata ?? rec.publicMetadata;
+  if (
+    typeof pmRaw === "object" &&
+    pmRaw !== null &&
+    !Array.isArray(pmRaw)
+  ) {
+    const r = (pmRaw as Record<string, unknown>).role;
+    return r === "admin";
+  }
+
+  return false;
+}
 
 export async function getCurrentUserSubject(
   ctx: QueryCtx | MutationCtx,
@@ -12,15 +41,20 @@ export async function getCurrentUserSubject(
 }
 
 export async function requireAdmin(ctx: MutationCtx | QueryCtx): Promise<void> {
-  const subject = await getCurrentUserSubject(ctx);
-  const user = await ctx.db
-    .query("users")
-    .withIndex("by_clerk_id", (q) => q.eq("clerkId", subject))
-    .unique();
-
-  if (!user || user.role !== "admin") {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity?.subject) {
     throw new Error("Admin access required");
   }
+
+  const user = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+    .unique();
+
+  if (user?.role === "admin") return;
+  if (identityIndicatesClerkPublicAdmin(identity)) return;
+
+  throw new Error("Admin access required");
 }
 
 export async function upsertCustomerUser(

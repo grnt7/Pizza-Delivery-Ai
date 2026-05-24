@@ -1,6 +1,6 @@
 # Pinnochios Pizza (Expo)
 
-Customer mobile app in the monorepo (`apps/frontend`).
+Customer mobile app in the monorepo (`apps/frontend`). Kitchen/admin UI is separate (**`apps/admin`**, Next); set **`EXPO_PUBLIC_ADMIN_URL`** in **`apps/frontend/.env`** so Clerk **`role: admin`** users get a Profile shortcut to open that URL.
 
 ## Prerequisites
 
@@ -107,3 +107,7 @@ Inspired by workflows like [*Let’s Vibe Code a Pizza Delivery App with AI — 
 - **Cart**: client-side cart with tab badge; **checkout** uses Stripe (Payment Sheet on native, Stripe Checkout redirect on web) with shared server-side cart validation. A legacy **manual** “pay at delivery” mutation exists for dev; set Convex **`ALLOW_UNPAID_ORDERS=false`** to disable it in production (`PINNOCHIOS_OPS.md`).
 
 **Note:** Ep \#5 also discusses a CMS; this repo loads the menu from **Convex** so it stays in sync with your deployment without wiring Sanity separately.
+
+**Kitchen admin:** store staff runs the separate Next app **`apps/admin`** (dev: `npm run dev` → `http://localhost:3001`). In Expo, admins with Clerk **`publicMetadata.role: "admin"`** see **Kitchen dashboard** on **Profile** when **`EXPO_PUBLIC_ADMIN_URL`** is set in **`apps/frontend/.env`** (restart Metro with **`npx expo start --clear`**). If Clerk metadata changes in the dashboard, refresh the session (sign out/in) so **`useUser`** picks it up.
+
+**If Profile still shows the dev hint “Set EXPO_PUBLIC_ADMIN_URL…”:** (1) stop Metro and restart with **`--clear`**; (2) confirm **`apps/frontend/.env`** sits next to **`app.config.js`** / **`app.json`**; (3) do **not** set **`EXPO_NO_DOTENV=1`** or **`EXPO_NO_CLIENT_ENV_VARS=1`** in your shell (they disable Expo’s `.env` load / client serialization); (4) on **Android Emulator** use **`http://10.0.2.2:3001`**, not `localhost`. Config **`app.config.js`** loads **`@expo/env`** from this package root and mirrors the URL into **`expo.extra`** as a fallback for **`expo-constants`**.
