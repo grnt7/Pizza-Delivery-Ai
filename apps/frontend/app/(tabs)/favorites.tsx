@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -18,8 +18,6 @@ export default function FavoritesScreen() {
     api.menu.getPizzasByIds,
     loaded && favoriteIds.length > 0 ? { ids: favoriteIds } : "skip",
   );
-
-  const seedDemoMenu = useMutation(api.menu.seedDemoMenu);
 
   if (!loaded) {
     return <LoadingScreen message="Loading favorites…" />;
