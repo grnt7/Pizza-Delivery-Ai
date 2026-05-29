@@ -2,6 +2,8 @@
 
 Customer ordering (**Expo**), kitchen admin (**Next.js**), and shared **`Convex`** backend. Use **one** Convex deployment URL across all clients.
 <img width="200" height="420" alt="Pinnochios-Pizza Hompage" src="https://github.com/user-attachments/assets/903589ad-1371-43ce-a7eb-6cd3e80f95f9" />
+<img width="200" height="420" alt="Pinnochios-Pizza Cart page" src="https://github.com/user-attachments/assets/7fcd1092-0c92-4cf6-910a-18c1de75f7ca" />
+<img width="200" height="420" alt="Pay   Place Order page" src="https://github.com/user-attachments/assets/18df6b4a-507e-455f-8c2e-85ae92b96762" />
 
 ---
 
