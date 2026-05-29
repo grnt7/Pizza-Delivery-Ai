@@ -1,6 +1,7 @@
 # Pinnochio’s Pizza — Pizza-Ai Monorepo
 
 Customer ordering (**Expo**), kitchen admin (**Next.js**), and shared **`Convex`** backend. Use **one** Convex deployment URL across all clients.
+<img width="200" height="420" alt="Pinnochios-Pizza Hompage" src="https://github.com/user-attachments/assets/903589ad-1371-43ce-a7eb-6cd3e80f95f9" />
 
 ---
 
